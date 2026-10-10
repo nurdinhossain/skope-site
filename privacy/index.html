@@ -18,7 +18,7 @@
 
   <main>
     <h1>Privacy Policy</h1>
-    <p class="meta">Effective October 6, 2026</p>
+    <p class="meta">Effective October 9, 2026</p>
 
     <p>
       This policy explains what Skope, an app operated by Nurdin Hossain ("Skope", "we", "us"), collects when you use the Skope iPhone app, what we do
@@ -31,6 +31,7 @@
         <li>You sign in with Apple. We don't ask for your email address, and we have no passwords.</li>
         <li>We store the goals, steps, photos and conversations you create so the app can work.</li>
         <li>An AI provider (Anthropic) reads your goal text, messages and proof photos to write replies, plan steps and check proof.</li>
+        <li>We use PostHog to count which features are used. It never receives the text of your goals or messages, or your photos.</li>
         <li>We don't sell your data, show ads, or track you across other apps and websites.</li>
         <li>You can delete your account and its data from inside the app at any time.</li>
       </ul>
@@ -45,7 +46,7 @@
       </tr>
       <tr>
         <td>Profile</td>
-        <td>The name you type during setup, the goal categories you choose, the coach (character) you were matched with, and when you finished setup.</td>
+        <td>The name you type during setup, the goal categories you choose, your coaching style and the obstacles you picked in setup (these shape how your coach talks to you), and when you finished setup.</td>
       </tr>
       <tr>
         <td>Goals and progress</td>
@@ -62,6 +63,10 @@
       <tr>
         <td>Reminders</td>
         <td>The time of day you chose for your daily check-in. The reminder notifications are scheduled on your own phone by the app; we don't send them from our servers.</td>
+      </tr>
+      <tr>
+        <td>Usage</td>
+        <td>Which steps and screens you reach and actions such as creating a goal, submitting a proof photo or finishing a check-in, tied to your account identifier. For a goal we record only its category (or "custom"), whether it repeats, and whether it has a time or a stake, never what you wrote.</td>
       </tr>
       <tr>
         <td>Technical</td>
@@ -98,19 +103,23 @@
         See <a href="https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data">Anthropic's data retention page</a>.
       </li>
       <li>
+        <strong>PostHog</strong> provides product analytics, so we can see which parts of the app are used and fix what isn't working.
+        It receives the usage events above, with your account identifier, plus basic device details (app version, iOS version, device model).
+        It does not receive your goals, messages or photos.
+      </li>
+      <li>
         <strong>Apple</strong> handles Sign in with Apple and delivers the notifications scheduled on your phone.
       </li>
     </ul>
     <p>
-      We do not sell your personal information or share it for advertising, and we do not use advertising or analytics
-      software in the app. We may disclose information if the law requires it, or to protect the rights, safety or
+      We do not sell your personal information or share it for advertising, and we do not use advertising software. The only analytics we use is PostHog, as described above. We may disclose information if the law requires it, or to protect the rights, safety or
       security of our users or the service.
     </p>
 
     <h2>Where it's processed</h2>
     <p>
       Your account data is stored in Canada. AI requests are processed by Anthropic, which operates in the United States
-      and other countries. By using Skope you understand your information may be processed outside the country where you live.
+      and other countries. Usage events go to PostHog's servers in the United States. By using Skope you understand your information may be processed outside the country where you live.
     </p>
 
     <h2>How long we keep it</h2>
@@ -118,7 +127,7 @@
       We keep your information for as long as your account exists. When you delete your account, we delete your profile,
       goals, steps, photos, conversations and notes from our database and file storage, and we ask Apple to end the
       Sign in with Apple connection for Skope. Any backups our hosting provider keeps expire on their normal schedule, and
-      Anthropic keeps requests for the period described above. Server logs are kept for a short time.
+      Anthropic keeps requests for the period described above. Usage events stay in PostHog under your account identifier after deletion; email us and we will delete them too. Server logs are kept for a short time.
     </p>
 
     <h2>Your choices and rights</h2>

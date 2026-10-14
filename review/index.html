@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Proofs waiting - Skope</title>
+  <link rel="icon" href="../assets/icon-192.png">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .proof img { display: block; width: 100%; max-height: 70vh; object-fit: contain; background: #0001; border-radius: 12px; margin: 0 0 12px; }
+    .proof dt { font-weight: 600; margin-top: 10px; }
+    .proof dd { margin: 2px 0 0; }
+    .proof textarea, #key { width: 100%; box-sizing: border-box; font: inherit; padding: 10px; border-radius: 10px; border: 1px solid #0004; margin: 10px 0 0; }
+    .actions { display: flex; gap: 10px; margin-top: 12px; }
+    .actions button, #save, #refresh { flex: 1; font: inherit; font-weight: 600; padding: 12px; border-radius: 10px; border: 0; cursor: pointer; }
+    .approve { background: #2e7d32; color: #fff; }
+    .reject { background: #b3261e; color: #fff; }
+    #save, #refresh { background: #222; color: #fff; margin-top: 10px; }
+    button:disabled { opacity: .5; cursor: default; }
+    .note { color: #555; }
+    .error { color: #b3261e; }
+  </style>
+</head>
+<body>
+  <header class="band">
+    <span class="brand">Skope review</span>
+  </header>
+
+  <main>
+    <div class="card" id="keyCard" hidden>
+      <h2>Review key</h2>
+      <p class="note">Kept on this device only.</p>
+      <input id="key" type="password" autocomplete="off" placeholder="Key">
+      <button id="save">Save</button>
+    </div>
+
+    <p id="status" class="note"></p>
+    <div id="queue"></div>
+    <button id="refresh" hidden>Refresh</button>
+  </main>
+
+  <script>
+    // The page itself holds nothing private; every request carries the key, and the function refuses anything without it.
+    const API = location.hostname === "localhost"
+      ? "http://127.0.0.1:54321/functions/v1/review-admin"
+      : "https://wbaztfdxjqmaeeiwgzit.supabase.co/functions/v1/review-admin";
+    const $ = (id) => document.getElementById(id);
+    const status = $("status");
+    const queue = $("queue");
+
+    const getKey = () => { try { return localStorage.getItem("skope-review-key") || ""; } catch { return ""; } };
+    const setKey = (value) => { try { localStorage.setItem("skope-review-key", value); } catch {} };
+
+    async function call(payload) {
+      const response = await fetch(API, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: "Bearer " + getKey() },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw Object.assign(new Error(body.error || "Something went wrong"), { status: response.status });
+      return body;
+    }
+
+    function waited(since) {
+      const minutes = Math.max(0, Math.round((Date.now() - Date.parse(since)) / 60000));
+      if (minutes < 60) return minutes + " min";
+      const hours = Math.round(minutes / 60);
+      return hours < 48 ? hours + " h" : Math.round(hours / 24) + " days";
+    }
+
+    function row(label, text) {
+      const frag = document.createDocumentFragment();
+      const dt = document.createElement("dt"); dt.textContent = label;
+      const dd = document.createElement("dd"); dd.textContent = text || "None";
+      frag.append(dt, dd);
+      return frag;
+    }
+
+    function render(items) {
+      queue.replaceChildren();
+      status.textContent = items.length ? items.length + " waiting, oldest first" : "Nothing waiting.";
+      for (const item of items) {
+        const card = document.createElement("div");
+        card.className = "card proof";
+        if (item.photo_url) {
+          const img = document.createElement("img");
+          img.referrerPolicy = "no-referrer"; img.alt = "Proof photo"; img.src = item.photo_url;
+          card.append(img);
+        } else {
+          const none = document.createElement("p"); none.className = "note"; none.textContent = "No photo."; card.append(none);
+        }
+        const list = document.createElement("dl");
+        list.append(
+          row("Goal", item.goal_title), row("Step", item.milestone_title), row("What done looks like", item.proof_description),
+          row("The AI said", item.ai_note), row("Waiting", waited(item.waiting_since)),
+        );
+        const reason = document.createElement("textarea");
+        reason.rows = 2; reason.maxLength = 200; reason.placeholder = "Reason (required to reject; the user reads it)";
+        const approve = document.createElement("button"); approve.className = "approve"; approve.textContent = "Approve";
+        const reject = document.createElement("button"); reject.className = "reject"; reject.textContent = "Reject";
+        const error = document.createElement("p"); error.className = "error";
+        const actions = document.createElement("div"); actions.className = "actions"; actions.append(approve, reject);
+        async function decide(approved) {
+          error.textContent = "";
+          if (!approved && reason.value.trim().length < 3) { error.textContent = "Write a reason the user can read."; return; }
+          approve.disabled = reject.disabled = true;
+          try {
+            await call({ action: "decide", id: item.id, approve: approved, reason: reason.value });
+            card.remove();
+            await load();
+          } catch (e) {
+            error.textContent = e.message; approve.disabled = reject.disabled = false;
+          }
+        }
+        approve.onclick = () => decide(true);
+        reject.onclick = () => decide(false);
+        card.append(list, reason, actions, error);
+        queue.append(card);
+      }
+    }
+
+    async function load() {
+      if (!getKey()) { $("keyCard").hidden = false; $("refresh").hidden = true; status.textContent = ""; return; }
+      status.textContent = "Loading...";
+      try {
+        const { items } = await call({ action: "list" });
+        $("keyCard").hidden = true; $("refresh").hidden = false;
+        render(items);
+      } catch (e) {
+        if (e.status === 401) { setKey(""); $("keyCard").hidden = false; $("refresh").hidden = true; status.textContent = "That key was not accepted."; }
+        else status.textContent = e.message;
+      }
+    }
+
+    $("save").onclick = () => { setKey($("key").value.trim()); $("key").value = ""; load(); };
+    $("refresh").onclick = load;
+    load();
+  </script>
+</body>
+</html>
